@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Can LLMs Be Computers? — Interactive Explainer</title>
+    <meta name="description" content="An interactive exploration of how transformers can execute programs using geometric attention tricks.">
+    <meta property="og:title" content="Can LLMs Be Computers? — Interactive Explainer">
+    <meta property="og:description" content="An interactive exploration of how transformers can execute programs and the geometric trick that makes it fast.">
+    <meta property="og:type" content="article">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-orange: #f78166;
+            --accent-green: #7ee787;
+            --accent-purple: #bc8cff;
+            --border: #30363d;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            font-size: 18px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+
+        section {
+            padding: 80px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        section.visible { opacity: 1; transform: translateY(0); }
+
+        h1 { font-size: 3rem; font-weight: 700; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.02em; }
+        h2 { font-size: 2rem; font-weight: 600; line-height: 1.3; margin-bottom: 24px; color: var(--accent-blue); }
+        h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; }
+        p { margin-bottom: 20px; color: var(--text-secondary); }
+        p.lead { font-size: 1.15rem; color: var(--text); }
+        strong { color: var(--text); }
+        em { color: var(--text); font-style: italic; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        ul { padding-left: 24px; margin-bottom: 20px; color: var(--text-secondary); }
+        li { margin-bottom: 6px; }
+
+        .highlight { color: var(--accent-blue); }
+        .highlight-orange { color: var(--accent-orange); }
+        .highlight-green { color: var(--accent-green); }
+        .highlight-purple { color: var(--accent-purple); }
+
+        code {
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.88em;
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+        .hero .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 600px;
+        }
+        .hero .credit {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+        .scroll-hint {
+            margin-top: 48px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            animation: bounce 2s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(8px); }
+        }
+
+        /* Demo boxes */
+        .demo-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 32px 0;
+        }
+        .demo-box canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+        .demo-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .controls label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-tertiary);
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            flex: 1;
+            min-width: 100px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border: none;
+        }
+
+        button {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.85; }
+        button:disabled { opacity: 0.4; cursor: default; }
+        button.secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+        }
+
+        .stat {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-green);
+        }
+
+        /* Diagrams */
+        .diagram {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin: 32px 0;
+            text-align: center;
+        }
+        .flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .box {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .box.accent { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .arrow-sep { color: var(--text-secondary); font-size: 1.2rem; }
+
+        /* Side by side */
+        .side-by-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 32px 0;
+        }
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        .panel h3 { margin-bottom: 12px; }
+        .panel canvas { margin: 0 auto; cursor: default; }
+
+        /* Race bars */
+        .race-container { margin: 20px 0; }
+        .race-bar-wrapper {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .race-label {
+            width: 110px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .race-track {
+            flex: 1;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        .race-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.08s linear;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+            min-width: 36px;
+        }
+        .race-bar.linear { background: var(--accent-orange); }
+        .race-bar.binary { background: var(--accent-green); }
+
+        /* Scale comparison */
+        .scale-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .scale-number {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .scale-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+        /* Execution demo */
+        .exec-instruction {
+            text-align: center;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 1.1rem;
+            color: var(--accent-purple);
+            margin-bottom: 20px;
+            min-height: 1.5em;
+        }
+        .exec-stack-area {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            min-height: 56px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .stack-item {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            animation: stackPop 0.3s ease;
+        }
+        @keyframes stackPop {
+            from { transform: scale(0.6); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .exec-pc {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 48px 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        footer p { color: var(--text-secondary); }
+
+        /* Responsive */
+        @media (max-width: 680px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            section { padding: 48px 0; }
+            .side-by-side { grid-template-columns: 1fr; }
+            .demo-box { padding: 20px; }
+            .panel { padding: 16px; }
+            .flow { gap: 8px; }
+            .box { padding: 8px 14px; font-size: 0.82rem; }
+            .race-label { width: 80px; font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+    <div class="container">
+        <h1>Can LLMs Be <span class="highlight">Computers</span>?</h1>
+        <p class="subtitle">An interactive exploration of how researchers embedded a working computer inside a transformer &mdash; and the geometric trick that makes it fast.</p>
+        <p class="credit">Based on research by <a href="https://www.percepta.ai/blog/can-llms-be-computers" target="_blank">Percepta AI</a></p>
+        <div class="scroll-hint">&darr; Scroll to explore</div>
+    </div>
+</section>
+
+<!-- ===== THE PREMISE ===== -->
+<section id="premise">
+    <div class="container">
+        <h2>The Premise</h2>
+        <p class="lead">When you ask an LLM to calculate something, it doesn't actually compute. It predicts what the answer <em>looks like</em>.</p>
+        <p>That's why LLMs sometimes get math wrong. They're pattern-matching, not calculating. The usual workaround is to have the model write code, run it externally, and read the result back:</p>
+
+        <div class="diagram">
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">The usual approach</div>
+            <div class="flow">
+                <div class="box">LLM</div>
+                <div class="arrow-sep">&rarr;</div>
+                <div class="box">writes code</div>
+                <div class="arrow-sep">&rarr;</div>
+                <div class="box accent">external interpreter</div>
+                <div class="arrow-sep">&rarr;</div>
+                <div class="box">reads result</div>
+            </div>
+        </div>
+
+        <p class="lead">What if the transformer itself <em>was</em> the computer?</p>
+
+        <div class="diagram">
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">The new idea</div>
+            <div class="flow">
+                <div class="box">Program bytecode</div>
+                <div class="arrow-sep">&rarr;</div>
+                <div class="box accent">Transformer executes internally</div>
+                <div class="arrow-sep">&rarr;</div>
+                <div class="box">Result</div>
+            </div>
+            <p style="margin-top: 16px; margin-bottom: 0; font-size: 0.95rem;">The weights <em>are</em> the CPU. Attention <em>is</em> the RAM.</p>
+        </div>
+
+        <p>Percepta's researchers built exactly this: a 7-layer transformer with compiled weights that executes <a href="https://webassembly.org/" target="_blank">WebAssembly</a> programs &mdash; deterministically, step by step, for millions of steps.</p>
+        <p>But there's a problem they had to solve first.</p>
+    </div>
+</section>
+
+<!-- ===== THE BOTTLENECK ===== -->
+<section id="bottleneck">
+    <div class="container">
+        <h2>The Bottleneck</h2>
+        <p class="lead">In a transformer, every token looks at every previous token. This is <strong>self-attention</strong>, and its cost grows quadratically.</p>
+
+        <div class="demo-box">
+            <h3>Attention cost</h3>
+            <p class="demo-label">Each colored cell is one attention computation. Drag the slider to see the cost explode.</p>
+            <canvas id="attention-canvas"></canvas>
+            <div class="controls">
+                <label>Tokens: <strong id="token-count">8</strong></label>
+                <input type="range" id="token-slider" min="4" max="48" value="8">
+                <span class="stat" id="attention-cost">36 operations</span>
+            </div>
+        </div>
+
+        <p>For a program running <strong>1 million steps</strong>, self-attention would need roughly <strong>500 billion</strong> computations. Each new step has to scan the entire history.</p>
+        <p>To make a transformer-computer viable, they needed attention to be <em>radically</em> cheaper. Their solution is a beautiful geometric trick.</p>
+    </div>
+</section>
+
+<!-- ===== THE PARABOLA ===== -->
+<section id="parabola">
+    <div class="container">
+        <h2>The Geometric Trick</h2>
+        <p class="lead">Encode each memory position as a point on a <span class="highlight-purple">parabola</span>.</p>
+        <p>Instead of representing memory position <code>j</code> as a flat number, map it to a 2D point:</p>
+        <p style="text-align: center; font-size: 1.3rem; color: var(--text); margin: 28px 0;">
+            position <code>j</code> &nbsp;&rarr;&nbsp; point <code style="color: var(--accent-purple)">(2j, &minus;j&sup2;)</code>
+        </p>
+        <p>This might seem arbitrary. But it unlocks something remarkable about <strong>convex hulls</strong>.</p>
+    </div>
+</section>
+
+<!-- ===== CONVEX HULL PROPERTY ===== -->
+<section id="hull">
+    <div class="container">
+        <h2>Why a Parabola?</h2>
+        <p class="lead">Because <em>every</em> point on a parabola sits on the <span class="highlight-green">convex hull</span>.</p>
+        <p>A convex hull is like stretching a rubber band around a set of points &mdash; the outer boundary. With random points, many end up trapped inside. But on a parabola, every single point is on the boundary.</p>
+
+        <div class="side-by-side">
+            <div class="panel">
+                <h3 style="color: var(--accent-orange);">Random Points</h3>
+                <canvas id="random-hull-canvas"></canvas>
+                <p style="margin-top: 12px; margin-bottom: 0;" id="random-hull-stat"></p>
+            </div>
+            <div class="panel">
+                <h3 style="color: var(--accent-green);">Parabola Points</h3>
+                <canvas id="parabola-hull-canvas"></canvas>
+                <p style="margin-top: 12px; margin-bottom: 0;" id="parabola-hull-stat"></p>
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <button id="regenerate-btn">Regenerate random points</button>
+        </div>
+
+        <p style="margin-top: 28px;">This matters because <strong>finding the best memory match in attention is equivalent to finding a point on the convex hull</strong>. And if all points are on the hull, in sorted order, you can search it with a fast shortcut.</p>
+    </div>
+</section>
+
+<!-- ===== ATTENTION AS GEOMETRY ===== -->
+<section id="query">
+    <div class="container">
+        <h2>Attention as Geometry</h2>
+        <p class="lead">In attention, the model computes a <span class="highlight">dot product</span> between a query and every key. The highest dot product wins.</p>
+        <p>Geometrically, this is the same as asking: <em>which point on the hull is furthest in the query direction?</em></p>
+
+        <div class="demo-box">
+            <h3>Drag the query direction</h3>
+            <p class="demo-label">The <span style="color: var(--accent-blue);">blue arrow</span> is the query. The <span style="color: var(--accent-orange);">highlighted point</span> has the highest dot product &mdash; the best memory match.</p>
+            <canvas id="query-canvas"></canvas>
+        </div>
+
+        <p>Since the parabola points are sorted along the hull boundary, we don't need to check every point. We can <strong>binary search</strong>.</p>
+    </div>
+</section>
+
+<!-- ===== THE RACE ===== -->
+<section id="race">
+    <div class="container">
+        <h2>O(n) vs O(log n)</h2>
+        <p class="lead">Linear scan checks every point. Binary search on the hull jumps straight to the answer.</p>
+
+        <div class="demo-box">
+            <h3>The Race</h3>
+            <p class="demo-label"><span style="color: var(--accent-orange);">Orange</span> scans every point. <span style="color: var(--accent-green);">Green</span> binary-searches the hull. Same target &mdash; watch the difference.</p>
+            <canvas id="race-canvas"></canvas>
+            <div class="controls">
+                <label>Points: <strong id="race-n-display">32</strong></label>
+                <input type="range" id="race-n-slider" min="8" max="128" value="32" step="8">
+                <button id="race-btn">Race!</button>
+            </div>
+            <div class="race-container">
+                <div class="race-bar-wrapper">
+                    <span class="race-label">Linear scan</span>
+                    <div class="race-track">
+                        <div class="race-bar linear" id="linear-bar" style="width: 0%">0</div>
+                    </div>
+                </div>
+                <div class="race-bar-wrapper">
+                    <span class="race-label">Binary search</span>
+                    <div class="race-track">
+                        <div class="race-bar binary" id="binary-bar" style="width: 0%">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-box">
+            <h3>At scale</h3>
+            <p class="demo-label">Drag the slider to see how the gap grows with memory size.</p>
+            <div class="controls">
+                <label>Memory size: <strong id="scale-n-display">1,000</strong></label>
+                <input type="range" id="scale-slider" min="2" max="7" value="3" step="0.01">
+            </div>
+            <div class="scale-grid">
+                <div>
+                    <div class="scale-label" style="color: var(--accent-orange);">Linear scan</div>
+                    <div class="scale-number" style="color: var(--accent-orange);" id="scale-linear">1,000</div>
+                    <div class="scale-label">steps</div>
+                </div>
+                <div>
+                    <div class="scale-label" style="color: var(--accent-green);">Binary search</div>
+                    <div class="scale-number" style="color: var(--accent-green);" id="scale-binary">10</div>
+                    <div class="scale-label">steps</div>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: center;">
+                <span class="stat" id="scale-speedup">100&times; faster</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== TRANSFORMER AS COMPUTER ===== -->
+<section id="computer">
+    <div class="container">
+        <h2>The Transformer as Computer</h2>
+        <p class="lead">Put it all together and the transformer can execute programs &mdash; step by step, deterministically.</p>
+
+        <div class="diagram">
+            <div class="flow">
+                <div class="box" style="border-color: var(--accent-purple); color: var(--accent-purple);">Weights = CPU logic</div>
+                <div class="box" style="border-color: var(--accent-blue); color: var(--accent-blue);">Attention = RAM lookup</div>
+                <div class="box" style="border-color: var(--accent-green); color: var(--accent-green);">Tokens = machine state</div>
+            </div>
+        </div>
+
+        <p>The model reads a <a href="https://webassembly.org/" target="_blank">WebAssembly</a> instruction, updates its internal state (registers, stack, memory), and produces the next state &mdash; all through its transformer layers. Each forward pass = one CPU cycle.</p>
+
+        <div class="demo-box">
+            <h3>Watch it execute: <code>(3 + 4) &times; 2</code></h3>
+            <p class="demo-label">Each step is one forward pass through the transformer.</p>
+            <div id="execution-demo">
+                <div class="exec-instruction" id="exec-instruction">Ready</div>
+                <div class="exec-stack-area" id="exec-stack">
+                    <span style="color: var(--text-secondary); font-size: 0.9rem;">[ empty stack ]</span>
+                </div>
+                <div class="exec-pc" id="exec-pc">Program counter: 0</div>
+            </div>
+            <div class="controls" style="justify-content: center;">
+                <button id="exec-step-btn">Next step</button>
+                <button id="exec-play-btn" class="secondary">Auto-play</button>
+                <button id="exec-reset-btn" class="secondary">Reset</button>
+            </div>
+        </div>
+
+        <p>The actual model has just <strong>7 layers</strong>, <strong>18 attention heads</strong> (each 2-dimensional &mdash; the minimum needed for the convex hull trick), and about <strong>964 compiled parameters</strong>. It runs at over 30,000 tokens/sec on a CPU.</p>
+    </div>
+</section>
+
+<!-- ===== CAVEATS ===== -->
+<section id="caveats">
+    <div class="container">
+        <h2>What's Real, What's Open</h2>
+        <p class="lead">This is genuinely novel work, but important caveats remain.</p>
+
+        <h3 style="color: var(--accent-green);">What's demonstrated</h3>
+        <ul>
+            <li>A transformer can deterministically execute programs via compiled weights</li>
+            <li>The convex hull trick gives <strong>O(log n)</strong> memory lookup in 2D attention</li>
+            <li>Execution is exact &mdash; same input always produces same output</li>
+            <li>30k+ tokens/sec on CPU for this tiny, purpose-built model</li>
+        </ul>
+
+        <h3 style="color: var(--accent-orange);">Open questions</h3>
+        <ul>
+            <li>The weights are <strong>compiled, not learned</strong> &mdash; can this approach be trained via gradient descent?</li>
+            <li>The trick requires <strong>2D attention heads</strong> &mdash; real LLMs use 64&ndash;128 dimensions per head</li>
+            <li>Can language understanding and program execution <strong>coexist</strong> in one model?</li>
+            <li>Is this actually faster than calling a normal WASM runtime?</li>
+        </ul>
+
+        <p>The deepest implication: transformers may be capable of <em>universal computation</em> with logarithmic memory access. That would make them not just pattern matchers, but <strong>programmable compute substrates</strong>.</p>
+
+        <div class="diagram" style="margin-top: 40px;">
+            <p style="margin-bottom: 8px; font-size: 0.95rem; color: var(--text);">One-sentence takeaway</p>
+            <p style="margin-bottom: 0; font-size: 1.1rem; color: var(--accent-blue); font-weight: 500;">A transformer whose weights implement a CPU, and attention acts like the RAM lookup.</p>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>Based on <a href="https://www.percepta.ai/blog/can-llms-be-computers" target="_blank">Can LLMs Be Computers?</a> by Christos Tzamos at Percepta AI</p>
+        <p style="margin-top: 8px;">Also see: <a href="https://whtwnd.com/austegard.com/3mgxahx5axp2c" target="_blank">Yes, LLMs Can Be Computers. Now What?</a> by austegard</p>
+    </div>
+</footer>
+
+<script>
+// ──────────────────────────────────────────
+// Utilities
+// ──────────────────────────────────────────
+
+function initCanvas(id, w, h) {
+    const canvas = document.getElementById(id);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { canvas, ctx, w, h };
+}
+
+function cross(O, A, B) {
+    return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+}
+
+function convexHull(points) {
+    const pts = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (pts.length <= 2) return pts.slice();
+    const lower = [];
+    for (const p of pts) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0)
+            lower.pop();
+        lower.push(p);
+    }
+    const upper = [];
+    for (let i = pts.length - 1; i >= 0; i--) {
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0)
+            upper.pop();
+        upper.push(pts[i]);
+    }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+function drawArrow(ctx, fx, fy, tx, ty, color, lineWidth) {
+    const angle = Math.atan2(ty - fy, tx - fx);
+    const headLen = 10;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(tx, ty);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - headLen * Math.cos(angle - 0.35), ty - headLen * Math.sin(angle - 0.35));
+    ctx.lineTo(tx - headLen * Math.cos(angle + 0.35), ty - headLen * Math.sin(angle + 0.35));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+}
+
+// ──────────────────────────────────────────
+// 1. Attention Matrix
+// ──────────────────────────────────────────
+
+function initAttentionDemo() {
+    const { ctx, w, h } = initCanvas('attention-canvas', 400, 400);
+    const slider = document.getElementById('token-slider');
+    const countEl = document.getElementById('token-count');
+    const costEl = document.getElementById('attention-cost');
+
+    function draw(n) {
+        ctx.clearRect(0, 0, w, h);
+        const cellSize = Math.min(w, h) / n;
+        const offsetX = (w - cellSize * n) / 2;
+        const offsetY = (h - cellSize * n) / 2;
+        let count = 0;
+
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j <= i; j++) {
+                const alpha = 0.25 + (1 - j / (i + 1)) * 0.45;
+                ctx.fillStyle = `rgba(88, 166, 255, ${alpha})`;
+                ctx.fillRect(
+                    offsetX + j * cellSize + 0.5,
+                    offsetY + i * cellSize + 0.5,
+                    Math.max(cellSize - 1, 1),
+                    Math.max(cellSize - 1, 1)
+                );
+                count++;
+            }
+        }
+
+        // Axis labels
+        ctx.fillStyle = 'rgba(139, 148, 158, 0.6)';
+        ctx.font = '12px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('tokens', w / 2, h - 4);
+        ctx.save();
+        ctx.translate(10, h / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('tokens', 0, 0);
+        ctx.restore();
+
+        countEl.textContent = n;
+        costEl.textContent = count.toLocaleString() + ' operations';
+    }
+
+    slider.addEventListener('input', () => draw(parseInt(slider.value)));
+    draw(8);
+}
+
+// ──────────────────────────────────────────
+// 2. Convex Hull Comparison
+// ──────────────────────────────────────────
+
+function initHullDemo() {
+    const W = 260, H = 260;
+    const { ctx: rctx } = initCanvas('random-hull-canvas', W, H);
+    const { ctx: pctx } = initCanvas('parabola-hull-canvas', W, H);
+    const rStat = document.getElementById('random-hull-stat');
+    const pStat = document.getElementById('parabola-hull-stat');
+    const regenBtn = document.getElementById('regenerate-btn');
+    const N = 20;
+    const margin = 28;
+
+    function drawHull(ctx, points, color, statEl) {
+        ctx.clearRect(0, 0, W, H);
+        const hull = convexHull(points);
+
+        // Draw hull polygon
+        if (hull.length >= 3) {
+            ctx.beginPath();
+            ctx.moveTo(hull[0][0], hull[0][1]);
+            for (let i = 1; i < hull.length; i++) ctx.lineTo(hull[i][0], hull[i][1]);
+            ctx.closePath();
+            ctx.fillStyle = color + '12';
+            ctx.fill();
+            ctx.strokeStyle = color + '50';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        // Determine which points are on hull
+        const hullSet = new Set(hull.map(p => p[0].toFixed(4) + ',' + p[1].toFixed(4)));
+        let onHull = 0;
+        for (const p of points) {
+            const key = p[0].toFixed(4) + ',' + p[1].toFixed(4);
+            const isOn = hullSet.has(key);
+            if (isOn) onHull++;
+
+            ctx.beginPath();
+            ctx.arc(p[0], p[1], isOn ? 5 : 4, 0, Math.PI * 2);
+            ctx.fillStyle = isOn ? color : '#484f58';
+            ctx.fill();
+            if (!isOn) {
+                ctx.strokeStyle = '#484f58';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        statEl.innerHTML = `<strong style="color:${color}">${onHull}</strong> <span style="color:var(--text-secondary)">of ${N} on hull</span>`;
+    }
+
+    function generateRandom() {
+        const pts = [];
+        for (let i = 0; i < N; i++) {
+            pts.push([
+                margin + Math.random() * (W - 2 * margin),
+                margin + Math.random() * (H - 2 * margin)
+            ]);
+        }
+        drawHull(rctx, pts, '#f78166', rStat);
+    }
+
+    function generateParabola() {
+        const pts = [];
+        for (let i = 0; i < N; i++) {
+            const t = (i / (N - 1)) * 2 - 1; // -1 to 1
+            const x = W / 2 + t * (W / 2 - margin);
+            const y = (H - margin) - (1 - t * t) * (H - 2 * margin);
+            pts.push([x, y]);
+        }
+        drawHull(pctx, pts, '#7ee787', pStat);
+    }
+
+    regenBtn.addEventListener('click', generateRandom);
+    generateRandom();
+    generateParabola();
+}
+
+// ──────────────────────────────────────────
+// 3. Query Direction Demo
+// ──────────────────────────────────────────
+
+function initQueryDemo() {
+    const W = 700, H = 380;
+    const { canvas, ctx } = initCanvas('query-canvas', W, H);
+
+    const N = 16;
+    const mathPts = [];
+    const screenPts = [];
+
+    for (let j = 0; j < N; j++) {
+        const mj = j - (N - 1) / 2;
+        mathPts.push([2 * mj, -(mj * mj)]);
+    }
+
+    const mxMin = Math.min(...mathPts.map(p => p[0]));
+    const mxMax = Math.max(...mathPts.map(p => p[0]));
+    const myMin = Math.min(...mathPts.map(p => p[1]));
+    const myMax = Math.max(...mathPts.map(p => p[1]));
+    const pad = 50;
+
+    for (const [mx, my] of mathPts) {
+        const sx = pad + ((mx - mxMin) / (mxMax - mxMin)) * (W - 2 * pad);
+        const sy = (H - pad) - ((my - myMin) / (myMax - myMin)) * (H - 2 * pad);
+        screenPts.push([sx, sy]);
+    }
+
+    let angle = Math.PI * 0.65;
+    let dragging = false;
+    const cx = W / 2, cy = H * 0.55;
+
+    function bestIndex(a) {
+        const qx = Math.cos(a), qy = Math.sin(a);
+        let best = 0, bestDot = -Infinity;
+        for (let i = 0; i < mathPts.length; i++) {
+            const dot = qx * mathPts[i][0] + qy * mathPts[i][1];
+            if (dot > bestDot) { bestDot = dot; best = i; }
+        }
+        return best;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // Parabola curve (smooth)
+        ctx.beginPath();
+        for (let t = 0; t <= 1; t += 0.01) {
+            const i = t * (N - 1);
+            const mj = i - (N - 1) / 2;
+            const mx = 2 * mj, my = -(mj * mj);
+            const sx = pad + ((mx - mxMin) / (mxMax - mxMin)) * (W - 2 * pad);
+            const sy = (H - pad) - ((my - myMin) / (myMax - myMin)) * (H - 2 * pad);
+            t === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+        }
+        ctx.strokeStyle = 'rgba(188, 140, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Hull outline
+        const hull = convexHull(screenPts.slice());
+        if (hull.length >= 3) {
+            ctx.beginPath();
+            ctx.moveTo(hull[0][0], hull[0][1]);
+            for (let i = 1; i < hull.length; i++) ctx.lineTo(hull[i][0], hull[i][1]);
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(188, 140, 255, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        const bi = bestIndex(angle);
+        const qx = Math.cos(angle), qy = Math.sin(angle);
+        const bestDot = qx * mathPts[bi][0] + qy * mathPts[bi][1];
+
+        // Projection line from origin to best point (in screen coords)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(screenPts[bi][0], screenPts[bi][1]);
+        ctx.strokeStyle = 'rgba(247, 129, 102, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw points with intensity based on dot product
+        for (let i = 0; i < screenPts.length; i++) {
+            const dot = qx * mathPts[i][0] + qy * mathPts[i][1];
+            const intensity = bestDot > 0 ? Math.max(0.12, dot / bestDot) : 0.3;
+            const [px, py] = screenPts[i];
+
+            if (i === bi) {
+                // Glow ring
+                ctx.beginPath();
+                ctx.arc(px, py, 16, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(247, 129, 102, 0.12)';
+                ctx.fill();
+                // Point
+                ctx.beginPath();
+                ctx.arc(px, py, 7, 0, Math.PI * 2);
+                ctx.fillStyle = '#f78166';
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(px, py, 5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(188, 140, 255, ${intensity})`;
+                ctx.fill();
+            }
+        }
+
+        // Query arrow
+        const arrowLen = 90;
+        const ax = cx + qx * arrowLen;
+        const ay = cy - qy * arrowLen;
+        drawArrow(ctx, cx, cy, ax, ay, '#58a6ff', 2.5);
+
+        // Labels
+        ctx.font = '13px -apple-system, sans-serif';
+        ctx.fillStyle = '#58a6ff';
+        ctx.fillText('query', ax + 10, ay - 6);
+
+        ctx.fillStyle = '#f78166';
+        const lx = screenPts[bi][0], ly = screenPts[bi][1];
+        ctx.fillText(`best match (pos ${bi})`, lx > W - 140 ? lx - 130 : lx + 14, ly - 10);
+    }
+
+    function onPointer(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = W / rect.width;
+        const scaleY = H / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+        angle = Math.atan2(-(my - cy), mx - cx);
+        draw();
+    }
+
+    canvas.addEventListener('mousedown', (e) => { dragging = true; onPointer(e); });
+    canvas.addEventListener('mousemove', (e) => { if (dragging) onPointer(e); });
+    canvas.addEventListener('mouseup', () => dragging = false);
+    canvas.addEventListener('mouseleave', () => dragging = false);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); dragging = true; onPointer(e.touches[0]); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (dragging) onPointer(e.touches[0]); }, { passive: false });
+    canvas.addEventListener('touchend', () => dragging = false);
+
+    draw();
+}
+
+// ──────────────────────────────────────────
+// 4. Race Demo
+// ──────────────────────────────────────────
+
+function initRaceDemo() {
+    const W = 700, H = 180;
+    const { canvas, ctx } = initCanvas('race-canvas', W, H);
+    const nSlider = document.getElementById('race-n-slider');
+    const nDisplay = document.getElementById('race-n-display');
+    const raceBtn = document.getElementById('race-btn');
+    const linearBar = document.getElementById('linear-bar');
+    const binaryBar = document.getElementById('binary-bar');
+
+    let N = 32;
+    let running = false;
+
+    function parabolaPts(n) {
+        const pts = [];
+        const m = 28;
+        for (let j = 0; j < n; j++) {
+            const t = n === 1 ? 0.5 : j / (n - 1);
+            const x = m + t * (W - 2 * m);
+            const tt = t * 2 - 1;
+            const y = (H - m) - (1 - tt * tt) * (H - 2 * m);
+            pts.push([x, y]);
+        }
+        return pts;
+    }
+
+    function drawState(pts, targetIdx, linearIdx, binaryRange, binaryMid) {
+        ctx.clearRect(0, 0, W, H);
+
+        // Curve
+        ctx.beginPath();
+        for (let i = 0; i < pts.length; i++) {
+            i === 0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]);
+        }
+        ctx.strokeStyle = 'rgba(188, 140, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Binary search range highlight
+        if (binaryRange) {
+            const lx = pts[binaryRange[0]][0] - 6;
+            const rx = pts[binaryRange[1]][0] + 6;
+            ctx.fillStyle = 'rgba(126, 231, 135, 0.08)';
+            ctx.fillRect(lx, 0, rx - lx, H);
+            ctx.strokeStyle = 'rgba(126, 231, 135, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(lx, 0, rx - lx, H);
+        }
+
+        // Points
+        for (let i = 0; i < pts.length; i++) {
+            const [px, py] = pts[i];
+            ctx.beginPath();
+
+            if (i === targetIdx) {
+                ctx.arc(px, py, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#7ee787';
+                ctx.fill();
+                ctx.font = 'bold 11px -apple-system, sans-serif';
+                ctx.fillStyle = '#7ee787';
+                ctx.textAlign = 'center';
+                ctx.fillText('TARGET', px, py - 14);
+            } else if (linearIdx !== null && i < linearIdx) {
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(247, 129, 102, 0.5)';
+                ctx.fill();
+            } else if (binaryMid !== null && i === binaryMid) {
+                ctx.arc(px, py, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#58a6ff';
+                ctx.fill();
+            } else {
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(139, 148, 158, 0.3)';
+                ctx.fill();
+            }
+        }
+
+        // Linear scan indicator
+        if (linearIdx !== null && linearIdx < pts.length) {
+            const [lx, ly] = pts[Math.min(linearIdx, pts.length - 1)];
+            ctx.beginPath();
+            ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+            ctx.strokeStyle = '#f78166';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    }
+
+    function runRace() {
+        if (running) return;
+        running = true;
+        raceBtn.disabled = true;
+
+        N = parseInt(nSlider.value);
+        const pts = parabolaPts(N);
+        const targetIdx = Math.floor(N * 0.72);
+
+        // Pre-compute binary search steps
+        const bSteps = [];
+        let lo = 0, hi = N - 1;
+        while (lo <= hi) {
+            const mid = Math.floor((lo + hi) / 2);
+            bSteps.push({ lo, hi, mid });
+            if (mid === targetIdx) break;
+            if (mid < targetIdx) lo = mid + 1;
+            else hi = mid - 1;
+        }
+
+        let tick = 0;
+        const totalLinear = targetIdx + 1;
+        const totalBinary = bSteps.length;
+
+        linearBar.style.width = '0%';
+        binaryBar.style.width = '0%';
+        linearBar.textContent = '0';
+        binaryBar.textContent = '0';
+
+        const tickMs = Math.max(16, 2000 / N);
+        let lastTime = 0;
+
+        function animate(timestamp) {
+            if (timestamp - lastTime < tickMs) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            lastTime = timestamp;
+
+            const linNow = Math.min(tick + 1, totalLinear);
+            const binNow = Math.min(tick + 1, totalBinary);
+            const linDone = linNow >= totalLinear;
+            const binDone = binNow >= totalBinary;
+
+            // Update bars
+            linearBar.style.width = (linNow / totalLinear * 100) + '%';
+            linearBar.textContent = linNow;
+            binaryBar.style.width = (binNow / totalBinary * 100) + '%';
+            binaryBar.textContent = binNow;
+
+            // Canvas
+            const bRange = binNow > 0 && binNow <= bSteps.length ? [bSteps[binNow - 1].lo, bSteps[binNow - 1].hi] : null;
+            const bMid = binNow > 0 && binNow <= bSteps.length ? bSteps[binNow - 1].mid : null;
+            drawState(pts, targetIdx, linNow, bRange, bMid);
+
+            tick++;
+            if (!linDone) {
+                requestAnimationFrame(animate);
+            } else {
+                running = false;
+                raceBtn.disabled = false;
+            }
+        }
+
+        drawState(pts, targetIdx, 0, null, null);
+        requestAnimationFrame(animate);
+    }
+
+    nSlider.addEventListener('input', () => {
+        N = parseInt(nSlider.value);
+        nDisplay.textContent = N;
+        linearBar.style.width = '0%';
+        binaryBar.style.width = '0%';
+        linearBar.textContent = '0';
+        binaryBar.textContent = '0';
+        drawState(parabolaPts(N), Math.floor(N * 0.72), null, null, null);
+    });
+
+    raceBtn.addEventListener('click', runRace);
+    drawState(parabolaPts(N), Math.floor(N * 0.72), null, null, null);
+}
+
+// ──────────────────────────────────────────
+// 5. Scale Comparison
+// ──────────────────────────────────────────
+
+function initScaleDemo() {
+    const slider = document.getElementById('scale-slider');
+    const nDisplay = document.getElementById('scale-n-display');
+    const linearEl = document.getElementById('scale-linear');
+    const binaryEl = document.getElementById('scale-binary');
+    const speedupEl = document.getElementById('scale-speedup');
+
+    function update() {
+        const exp = parseFloat(slider.value);
+        const n = Math.round(Math.pow(10, exp));
+        const logN = Math.max(1, Math.ceil(Math.log2(n)));
+        const speedup = Math.max(1, Math.round(n / logN));
+
+        nDisplay.textContent = n.toLocaleString();
+        linearEl.textContent = n.toLocaleString();
+        binaryEl.textContent = logN.toLocaleString();
+        speedupEl.innerHTML = speedup.toLocaleString() + '&times; faster';
+    }
+
+    slider.addEventListener('input', update);
+    update();
+}
+
+// ──────────────────────────────────────────
+// 6. Execution Demo
+// ──────────────────────────────────────────
+
+function initExecutionDemo() {
+    const instrEl = document.getElementById('exec-instruction');
+    const stackEl = document.getElementById('exec-stack');
+    const pcEl = document.getElementById('exec-pc');
+    const stepBtn = document.getElementById('exec-step-btn');
+    const playBtn = document.getElementById('exec-play-btn');
+    const resetBtn = document.getElementById('exec-reset-btn');
+
+    const program = [
+        { instr: 'i32.const 3', desc: 'Push 3 onto stack', action: s => [...s, 3] },
+        { instr: 'i32.const 4', desc: 'Push 4 onto stack', action: s => [...s, 4] },
+        { instr: 'i32.add',     desc: 'Pop two, push sum',  action: s => [...s.slice(0, -2), s[s.length - 2] + s[s.length - 1]] },
+        { instr: 'i32.const 2', desc: 'Push 2 onto stack', action: s => [...s, 2] },
+        { instr: 'i32.mul',     desc: 'Pop two, push product', action: s => [...s.slice(0, -2), s[s.length - 2] * s[s.length - 1]] },
+    ];
+
+    let pc = 0;
+    let stack = [];
+    let playing = false;
+    let timer = null;
+
+    function renderStack() {
+        stackEl.innerHTML = '';
+        if (stack.length === 0) {
+            stackEl.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.9rem;">[ empty stack ]</span>';
+            return;
+        }
+        for (const val of stack) {
+            const el = document.createElement('div');
+            el.className = 'stack-item';
+            el.textContent = val;
+            stackEl.appendChild(el);
+        }
+    }
+
+    function step() {
+        if (pc >= program.length) return;
+        const p = program[pc];
+        instrEl.textContent = p.instr;
+        instrEl.title = p.desc;
+        stack = p.action(stack);
+        renderStack();
+        pc++;
+        pcEl.textContent = `Program counter: ${pc}`;
+
+        if (pc >= program.length) {
+            instrEl.textContent += '  →  done! Result = ' + stack[stack.length - 1];
+            stopPlay();
+        }
+    }
+
+    function reset() {
+        stopPlay();
+        pc = 0;
+        stack = [];
+        instrEl.textContent = 'Ready';
+        pcEl.textContent = 'Program counter: 0';
+        renderStack();
+    }
+
+    function togglePlay() {
+        if (playing) {
+            stopPlay();
+        } else {
+            playing = true;
+            playBtn.textContent = 'Pause';
+            timer = setInterval(() => {
+                if (pc >= program.length) { stopPlay(); return; }
+                step();
+            }, 900);
+        }
+    }
+
+    function stopPlay() {
+        playing = false;
+        playBtn.textContent = 'Auto-play';
+        if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    stepBtn.addEventListener('click', step);
+    playBtn.addEventListener('click', togglePlay);
+    resetBtn.addEventListener('click', reset);
+    renderStack();
+}
+
+// ──────────────────────────────────────────
+// Scroll reveal
+// ──────────────────────────────────────────
+
+function initScrollReveal() {
+    const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        }
+    }, { threshold: 0.08 });
+
+    document.querySelectorAll('section:not(.hero)').forEach(s => observer.observe(s));
+}
+
+// ──────────────────────────────────────────
+// Boot
+// ──────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    initAttentionDemo();
+    initHullDemo();
+    initQueryDemo();
+    initRaceDemo();
+    initScaleDemo();
+    initExecutionDemo();
+    initScrollReveal();
+});
+</script>
+
+</body>
+</html>
