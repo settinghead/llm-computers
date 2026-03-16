@@ -290,42 +290,110 @@
         }
         .scale-label { font-size: 0.8rem; color: var(--text-secondary); }
 
-        /* Execution demo */
-        .exec-instruction {
-            text-align: center;
-            font-family: 'SF Mono', 'Consolas', monospace;
-            font-size: 1.1rem;
-            color: var(--accent-purple);
-            margin-bottom: 20px;
-            min-height: 1.5em;
-        }
-        .exec-stack-area {
+        /* Execution demo — transformer pipeline */
+        .transformer-pipeline {
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            min-height: 56px;
-            align-items: flex-end;
-            margin-bottom: 16px;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin: 20px 0;
         }
-        .stack-item {
+        .pipe-io {
             background: var(--bg-tertiary);
-            border: 2px solid var(--accent-green);
-            color: var(--accent-green);
-            padding: 10px 22px;
+            border: 1px solid var(--border);
             border-radius: 8px;
+            padding: 14px 28px;
+            text-align: center;
+            width: 100%;
+            max-width: 380px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .pipe-io.active-in {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 16px rgba(188, 140, 255, 0.2);
+        }
+        .pipe-io.active-out {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 16px rgba(126, 231, 135, 0.2);
+        }
+        .pipe-io-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .pipe-io-instr {
             font-family: 'SF Mono', 'Consolas', monospace;
-            font-size: 1.4rem;
-            font-weight: 700;
-            animation: stackPop 0.3s ease;
+            color: var(--accent-purple);
+            font-weight: 600;
+            font-size: 1rem;
         }
-        @keyframes stackPop {
-            from { transform: scale(0.6); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .pipe-io-state {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 2px;
         }
+        .pipe-arrow {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1;
+            opacity: 0.5;
+        }
+        .pipe-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            max-width: 380px;
+        }
+        .pipe-layer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+            font-size: 0.88rem;
+        }
+        .pipe-layer .layer-num {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 24px;
+        }
+        .pipe-layer .layer-detail {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+        .pipe-layer.decode.active {
+            border-color: var(--accent-purple);
+            background: rgba(188, 140, 255, 0.08);
+            box-shadow: 0 0 12px rgba(188, 140, 255, 0.15);
+        }
+        .pipe-layer.decode.active .layer-num { color: var(--accent-purple); }
+        .pipe-layer.attend.active {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.08);
+            box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
+        }
+        .pipe-layer.attend.active .layer-num { color: var(--accent-blue); }
+        .pipe-layer.attend.active .layer-detail { color: var(--accent-blue); }
+        .pipe-layer.compute.active {
+            border-color: var(--accent-green);
+            background: rgba(126, 231, 135, 0.08);
+            box-shadow: 0 0 12px rgba(126, 231, 135, 0.15);
+        }
+        .pipe-layer.compute.active .layer-num { color: var(--accent-green); }
         .exec-pc {
             text-align: center;
             font-size: 0.85rem;
             color: var(--text-secondary);
+            margin-top: 8px;
         }
 
         /* Footer */
@@ -557,14 +625,39 @@
 
         <div class="demo-box">
             <h3>Watch it execute: <code>(3 + 4) &times; 2</code></h3>
-            <p class="demo-label">Each step is one forward pass through the transformer.</p>
-            <div id="execution-demo">
-                <div class="exec-instruction" id="exec-instruction">Ready</div>
-                <div class="exec-stack-area" id="exec-stack">
-                    <span style="color: var(--text-secondary); font-size: 0.9rem;">[ empty stack ]</span>
+            <p class="demo-label">Each step sends the current state through all 7 transformer layers. Watch the data flow.</p>
+            <div class="transformer-pipeline">
+                <!-- Input -->
+                <div class="pipe-io" id="pipe-input">
+                    <div class="pipe-io-label">Input state</div>
+                    <div class="pipe-io-instr" id="pipe-instr">i32.const 3</div>
+                    <div class="pipe-io-state" id="pipe-state-in">Stack: [ ]</div>
                 </div>
-                <div class="exec-pc" id="exec-pc">Program counter: 0</div>
+                <div class="pipe-arrow">&darr;</div>
+                <!-- Transformer layers -->
+                <div class="pipe-layers">
+                    <div class="pipe-layer decode" id="layer-decode">
+                        <span class="layer-num">1&ndash;2</span>
+                        <span>Decode opcode</span>
+                    </div>
+                    <div class="pipe-layer attend" id="layer-attend">
+                        <span class="layer-num">3&ndash;4</span>
+                        <span>Attention: read stack</span>
+                        <span class="layer-detail">convex hull lookup</span>
+                    </div>
+                    <div class="pipe-layer compute" id="layer-compute">
+                        <span class="layer-num">5&ndash;7</span>
+                        <span>Compute new state</span>
+                    </div>
+                </div>
+                <div class="pipe-arrow">&darr;</div>
+                <!-- Output -->
+                <div class="pipe-io" id="pipe-output">
+                    <div class="pipe-io-label">Output state</div>
+                    <div class="pipe-io-state" id="pipe-state-out">&mdash;</div>
+                </div>
             </div>
+            <div class="exec-pc" id="exec-pc">Step 0 of 5</div>
             <div class="controls" style="justify-content: center;">
                 <button id="exec-step-btn">Next step</button>
                 <button id="exec-play-btn" class="secondary">Auto-play</button>
@@ -1154,63 +1247,113 @@ function initScaleDemo() {
 // ──────────────────────────────────────────
 
 function initExecutionDemo() {
-    const instrEl = document.getElementById('exec-instruction');
-    const stackEl = document.getElementById('exec-stack');
+    const pipeInput = document.getElementById('pipe-input');
+    const pipeInstr = document.getElementById('pipe-instr');
+    const pipeStateIn = document.getElementById('pipe-state-in');
+    const layerDecode = document.getElementById('layer-decode');
+    const layerAttend = document.getElementById('layer-attend');
+    const layerCompute = document.getElementById('layer-compute');
+    const pipeOutput = document.getElementById('pipe-output');
+    const pipeStateOut = document.getElementById('pipe-state-out');
     const pcEl = document.getElementById('exec-pc');
     const stepBtn = document.getElementById('exec-step-btn');
     const playBtn = document.getElementById('exec-play-btn');
     const resetBtn = document.getElementById('exec-reset-btn');
 
     const program = [
-        { instr: 'i32.const 3', desc: 'Push 3 onto stack', action: s => [...s, 3] },
-        { instr: 'i32.const 4', desc: 'Push 4 onto stack', action: s => [...s, 4] },
-        { instr: 'i32.add',     desc: 'Pop two, push sum',  action: s => [...s.slice(0, -2), s[s.length - 2] + s[s.length - 1]] },
-        { instr: 'i32.const 2', desc: 'Push 2 onto stack', action: s => [...s, 2] },
-        { instr: 'i32.mul',     desc: 'Pop two, push product', action: s => [...s.slice(0, -2), s[s.length - 2] * s[s.length - 1]] },
+        { instr: 'i32.const 3', action: s => [...s, 3] },
+        { instr: 'i32.const 4', action: s => [...s, 4] },
+        { instr: 'i32.add',     action: s => [...s.slice(0, -2), s[s.length - 2] + s[s.length - 1]] },
+        { instr: 'i32.const 2', action: s => [...s, 2] },
+        { instr: 'i32.mul',     action: s => [...s.slice(0, -2), s[s.length - 2] * s[s.length - 1]] },
     ];
 
     let pc = 0;
     let stack = [];
+    let animating = false;
     let playing = false;
-    let timer = null;
+    let playTimer = null;
 
-    function renderStack() {
-        stackEl.innerHTML = '';
-        if (stack.length === 0) {
-            stackEl.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.9rem;">[ empty stack ]</span>';
-            return;
-        }
-        for (const val of stack) {
-            const el = document.createElement('div');
-            el.className = 'stack-item';
-            el.textContent = val;
-            stackEl.appendChild(el);
-        }
+    function fmt(s) {
+        return 'Stack: ' + (s.length === 0 ? '[ ]' : '[ ' + s.join(', ') + ' ]');
+    }
+
+    function clearActive() {
+        pipeInput.classList.remove('active-in');
+        layerDecode.classList.remove('active');
+        layerAttend.classList.remove('active');
+        layerCompute.classList.remove('active');
+        pipeOutput.classList.remove('active-out');
     }
 
     function step() {
-        if (pc >= program.length) return;
-        const p = program[pc];
-        instrEl.textContent = p.instr;
-        instrEl.title = p.desc;
-        stack = p.action(stack);
-        renderStack();
-        pc++;
-        pcEl.textContent = `Program counter: ${pc}`;
+        if (pc >= program.length || animating) return;
+        animating = true;
+        stepBtn.disabled = true;
 
-        if (pc >= program.length) {
-            instrEl.textContent += '  →  done! Result = ' + stack[stack.length - 1];
-            stopPlay();
-        }
+        const p = program[pc];
+        const oldStack = [...stack];
+        const newStack = p.action(oldStack);
+
+        // Show input lighting up
+        clearActive();
+        pipeInstr.textContent = p.instr;
+        pipeStateIn.textContent = fmt(oldStack);
+        pipeStateOut.textContent = '...';
+        pipeOutput.classList.remove('active-out');
+        pipeInput.classList.add('active-in');
+
+        // Flow through layers
+        setTimeout(() => {
+            pipeInput.classList.remove('active-in');
+            layerDecode.classList.add('active');
+        }, 300);
+
+        setTimeout(() => {
+            layerDecode.classList.remove('active');
+            layerAttend.classList.add('active');
+        }, 600);
+
+        setTimeout(() => {
+            layerAttend.classList.remove('active');
+            layerCompute.classList.add('active');
+        }, 900);
+
+        setTimeout(() => {
+            layerCompute.classList.remove('active');
+            pipeOutput.classList.add('active-out');
+
+            stack = newStack;
+            pc++;
+
+            if (pc >= program.length) {
+                pipeStateOut.innerHTML = 'Stack: [ <strong style="color:var(--accent-green);font-size:1.1em">' + stack[stack.length - 1] + '</strong> ] &nbsp; done!';
+                pcEl.textContent = 'Step ' + pc + ' of ' + program.length + '  —  complete';
+                stopPlay();
+            } else {
+                pipeStateOut.textContent = fmt(newStack);
+                pcEl.textContent = 'Step ' + pc + ' of ' + program.length;
+                // Pre-fill next instruction
+                pipeInstr.textContent = program[pc].instr;
+                pipeStateIn.textContent = fmt(newStack);
+            }
+
+            animating = false;
+            stepBtn.disabled = false;
+        }, 1200);
     }
 
     function reset() {
         stopPlay();
         pc = 0;
         stack = [];
-        instrEl.textContent = 'Ready';
-        pcEl.textContent = 'Program counter: 0';
-        renderStack();
+        animating = false;
+        stepBtn.disabled = false;
+        clearActive();
+        pipeInstr.textContent = program[0].instr;
+        pipeStateIn.textContent = fmt([]);
+        pipeStateOut.textContent = '\u2014';
+        pcEl.textContent = 'Step 0 of ' + program.length;
     }
 
     function togglePlay() {
@@ -1219,23 +1362,30 @@ function initExecutionDemo() {
         } else {
             playing = true;
             playBtn.textContent = 'Pause';
-            timer = setInterval(() => {
-                if (pc >= program.length) { stopPlay(); return; }
+            function tick() {
+                if (!playing || pc >= program.length) { stopPlay(); return; }
                 step();
-            }, 900);
+                playTimer = setTimeout(tick, 1600);
+            }
+            tick();
         }
     }
 
     function stopPlay() {
         playing = false;
         playBtn.textContent = 'Auto-play';
-        if (timer) { clearInterval(timer); timer = null; }
+        if (playTimer) { clearTimeout(playTimer); playTimer = null; }
     }
 
     stepBtn.addEventListener('click', step);
     playBtn.addEventListener('click', togglePlay);
     resetBtn.addEventListener('click', reset);
-    renderStack();
+
+    // Initial state
+    pipeInstr.textContent = program[0].instr;
+    pipeStateIn.textContent = fmt([]);
+    pipeStateOut.textContent = '\u2014';
+    pcEl.textContent = 'Step 0 of ' + program.length;
 }
 
 // ──────────────────────────────────────────
