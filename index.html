@@ -290,110 +290,130 @@
         }
         .scale-label { font-size: 0.8rem; color: var(--text-secondary); }
 
-        /* Execution demo — transformer pipeline */
-        .transformer-pipeline {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            margin: 20px 0;
-        }
-        .pipe-io {
+        /* Execution demo — side-by-side comparison */
+        .exec-header {
+            text-align: center;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 14px 28px;
-            text-align: center;
-            width: 100%;
-            max-width: 380px;
+            padding: 14px 20px;
+            margin-bottom: 16px;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
-        .pipe-io.active-in {
+        .exec-header.active {
             border-color: var(--accent-purple);
-            box-shadow: 0 0 16px rgba(188, 140, 255, 0.2);
-        }
-        .pipe-io.active-out {
-            border-color: var(--accent-green);
-            box-shadow: 0 0 16px rgba(126, 231, 135, 0.2);
-        }
-        .pipe-io-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        .pipe-io-instr {
-            font-family: 'SF Mono', 'Consolas', monospace;
-            color: var(--accent-purple);
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .pipe-io-state {
-            font-family: 'SF Mono', 'Consolas', monospace;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-top: 2px;
-        }
-        .pipe-arrow {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1;
-            opacity: 0.5;
-        }
-        .pipe-layers {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            width: 100%;
-            max-width: 380px;
-        }
-        .pipe-layer {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg-tertiary);
-            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
-            font-size: 0.88rem;
-        }
-        .pipe-layer .layer-num {
-            font-family: 'SF Mono', 'Consolas', monospace;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            min-width: 24px;
-        }
-        .pipe-layer .layer-detail {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            margin-left: auto;
-        }
-        .pipe-layer.decode.active {
-            border-color: var(--accent-purple);
-            background: rgba(188, 140, 255, 0.08);
             box-shadow: 0 0 12px rgba(188, 140, 255, 0.15);
         }
-        .pipe-layer.decode.active .layer-num { color: var(--accent-purple); }
-        .pipe-layer.attend.active {
-            border-color: var(--accent-blue);
-            background: rgba(88, 166, 255, 0.08);
-            box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
+        .exec-instr {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 1.05rem;
+            color: var(--accent-purple);
+            font-weight: 600;
         }
-        .pipe-layer.attend.active .layer-num { color: var(--accent-blue); }
-        .pipe-layer.attend.active .layer-detail { color: var(--accent-blue); }
-        .pipe-layer.compute.active {
+        .exec-state {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+        .exec-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .exec-col {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .exec-col-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .exec-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .exec-lyr {
+            padding: 7px 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+        }
+        .exec-lyr.attn {
+            padding: 9px 10px;
+        }
+        .exec-lyr.active-decode {
+            border-color: var(--accent-purple);
+            background: rgba(188, 140, 255, 0.07);
+        }
+        .exec-lyr.active-std {
+            border-color: var(--accent-orange);
+            background: rgba(247, 129, 102, 0.07);
+            box-shadow: 0 0 10px rgba(247, 129, 102, 0.1);
+        }
+        .exec-lyr.active-hull {
             border-color: var(--accent-green);
-            background: rgba(126, 231, 135, 0.08);
-            box-shadow: 0 0 12px rgba(126, 231, 135, 0.15);
+            background: rgba(126, 231, 135, 0.07);
+            box-shadow: 0 0 10px rgba(126, 231, 135, 0.1);
         }
-        .pipe-layer.compute.active .layer-num { color: var(--accent-green); }
+        .exec-lyr.active-compute {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.07);
+        }
+        .attn-cost {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.78rem;
+            margin-top: 4px;
+        }
+        .attn-bar-track {
+            height: 5px;
+            background: var(--bg);
+            border-radius: 3px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .attn-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease;
+            min-width: 2px;
+        }
+        .exec-total {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .exec-total strong { font-size: 1.1em; }
+        .exec-scale-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
         .exec-pc {
             text-align: center;
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 8px;
+        }
+        @media (max-width: 680px) {
+            .exec-compare { grid-template-columns: 1fr; }
         }
 
         /* Footer */
@@ -625,38 +645,52 @@
 
         <div class="demo-box">
             <h3>Watch it execute: <code>(3 + 4) &times; 2</code></h3>
-            <p class="demo-label">Each step sends the current state through all 7 transformer layers. Watch the data flow.</p>
-            <div class="transformer-pipeline">
-                <!-- Input -->
-                <div class="pipe-io" id="pipe-input">
-                    <div class="pipe-io-label">Input state</div>
-                    <div class="pipe-io-instr" id="pipe-instr">i32.const 3</div>
-                    <div class="pipe-io-state" id="pipe-state-in">Stack: [ ]</div>
+            <p class="demo-label">Both approaches produce the same result. The difference is how attention reads memory at each step.</p>
+
+            <!-- Shared current step -->
+            <div class="exec-header" id="exec-header">
+                <div class="exec-instr" id="exec-instr">i32.const 3</div>
+                <div class="exec-state" id="exec-state">Stack: [ ]</div>
+            </div>
+
+            <!-- Side by side -->
+            <div class="exec-compare">
+                <!-- Standard attention -->
+                <div class="exec-col">
+                    <div class="exec-col-title" style="color: var(--accent-orange);">Standard Attention</div>
+                    <div class="exec-layers">
+                        <div class="exec-lyr" id="std-decode">Layers 1&ndash;2: Decode opcode</div>
+                        <div class="exec-lyr attn" id="std-attend">
+                            <div>Layers 3&ndash;4: <strong>Scan all previous states</strong></div>
+                            <div class="attn-cost" style="color: var(--accent-orange);" id="std-step-cost">&mdash;</div>
+                            <div class="attn-bar-track">
+                                <div class="attn-bar" id="std-bar" style="width: 0%; background: var(--accent-orange);"></div>
+                            </div>
+                        </div>
+                        <div class="exec-lyr" id="std-compute">Layers 5&ndash;7: Compute result</div>
+                    </div>
+                    <div class="exec-total">Total: <strong id="std-total" style="color: var(--accent-orange);">0</strong> ops</div>
                 </div>
-                <div class="pipe-arrow">&darr;</div>
-                <!-- Transformer layers -->
-                <div class="pipe-layers">
-                    <div class="pipe-layer decode" id="layer-decode">
-                        <span class="layer-num">1&ndash;2</span>
-                        <span>Decode opcode</span>
+
+                <!-- Hull attention -->
+                <div class="exec-col">
+                    <div class="exec-col-title" style="color: var(--accent-green);">Hull Attention</div>
+                    <div class="exec-layers">
+                        <div class="exec-lyr" id="hull-decode">Layers 1&ndash;2: Decode opcode</div>
+                        <div class="exec-lyr attn" id="hull-attend">
+                            <div>Layers 3&ndash;4: <strong>Binary search on hull</strong></div>
+                            <div class="attn-cost" style="color: var(--accent-green);" id="hull-step-cost">&mdash;</div>
+                            <div class="attn-bar-track">
+                                <div class="attn-bar" id="hull-bar" style="width: 0%; background: var(--accent-green);"></div>
+                            </div>
+                        </div>
+                        <div class="exec-lyr" id="hull-compute">Layers 5&ndash;7: Compute result</div>
                     </div>
-                    <div class="pipe-layer attend" id="layer-attend">
-                        <span class="layer-num">3&ndash;4</span>
-                        <span>Attention: read stack</span>
-                        <span class="layer-detail">convex hull lookup</span>
-                    </div>
-                    <div class="pipe-layer compute" id="layer-compute">
-                        <span class="layer-num">5&ndash;7</span>
-                        <span>Compute new state</span>
-                    </div>
-                </div>
-                <div class="pipe-arrow">&darr;</div>
-                <!-- Output -->
-                <div class="pipe-io" id="pipe-output">
-                    <div class="pipe-io-label">Output state</div>
-                    <div class="pipe-io-state" id="pipe-state-out">&mdash;</div>
+                    <div class="exec-total">Total: <strong id="hull-total" style="color: var(--accent-green);">0</strong> ops</div>
                 </div>
             </div>
+
+            <div class="exec-scale-note" id="exec-scale-note" style="display: none;"></div>
             <div class="exec-pc" id="exec-pc">Step 0 of 5</div>
             <div class="controls" style="justify-content: center;">
                 <button id="exec-step-btn">Next step</button>
@@ -1247,18 +1281,30 @@ function initScaleDemo() {
 // ──────────────────────────────────────────
 
 function initExecutionDemo() {
-    const pipeInput = document.getElementById('pipe-input');
-    const pipeInstr = document.getElementById('pipe-instr');
-    const pipeStateIn = document.getElementById('pipe-state-in');
-    const layerDecode = document.getElementById('layer-decode');
-    const layerAttend = document.getElementById('layer-attend');
-    const layerCompute = document.getElementById('layer-compute');
-    const pipeOutput = document.getElementById('pipe-output');
-    const pipeStateOut = document.getElementById('pipe-state-out');
+    const headerEl = document.getElementById('exec-header');
+    const instrEl = document.getElementById('exec-instr');
+    const stateEl = document.getElementById('exec-state');
     const pcEl = document.getElementById('exec-pc');
+    const scaleEl = document.getElementById('exec-scale-note');
     const stepBtn = document.getElementById('exec-step-btn');
     const playBtn = document.getElementById('exec-play-btn');
     const resetBtn = document.getElementById('exec-reset-btn');
+
+    // Standard side
+    const stdDecode = document.getElementById('std-decode');
+    const stdAttend = document.getElementById('std-attend');
+    const stdCompute = document.getElementById('std-compute');
+    const stdStepCost = document.getElementById('std-step-cost');
+    const stdBar = document.getElementById('std-bar');
+    const stdTotal = document.getElementById('std-total');
+
+    // Hull side
+    const hullDecode = document.getElementById('hull-decode');
+    const hullAttend = document.getElementById('hull-attend');
+    const hullCompute = document.getElementById('hull-compute');
+    const hullStepCost = document.getElementById('hull-step-cost');
+    const hullBar = document.getElementById('hull-bar');
+    const hullTotal = document.getElementById('hull-total');
 
     const program = [
         { instr: 'i32.const 3', action: s => [...s, 3] },
@@ -1270,20 +1316,24 @@ function initExecutionDemo() {
 
     let pc = 0;
     let stack = [];
+    let stdTotalOps = 0;
+    let hullTotalOps = 0;
     let animating = false;
     let playing = false;
     let playTimer = null;
 
     function fmt(s) {
-        return 'Stack: ' + (s.length === 0 ? '[ ]' : '[ ' + s.join(', ') + ' ]');
+        return s.length === 0 ? '[ ]' : '[ ' + s.join(', ') + ' ]';
     }
 
     function clearActive() {
-        pipeInput.classList.remove('active-in');
-        layerDecode.classList.remove('active');
-        layerAttend.classList.remove('active');
-        layerCompute.classList.remove('active');
-        pipeOutput.classList.remove('active-out');
+        headerEl.classList.remove('active');
+        [stdDecode, stdAttend, stdCompute].forEach(el => {
+            el.classList.remove('active-decode', 'active-std', 'active-compute');
+        });
+        [hullDecode, hullAttend, hullCompute].forEach(el => {
+            el.classList.remove('active-decode', 'active-hull', 'active-compute');
+        });
     }
 
     function step() {
@@ -1294,66 +1344,100 @@ function initExecutionDemo() {
         const p = program[pc];
         const oldStack = [...stack];
         const newStack = p.action(oldStack);
+        const stepNum = pc + 1;
 
-        // Show input lighting up
+        // Costs for this step
+        const stdCost = stepNum; // scan all previous states
+        const hullCost = Math.max(1, Math.ceil(Math.log2(stepNum + 1))); // binary search
+
+        // Show instruction
         clearActive();
-        pipeInstr.textContent = p.instr;
-        pipeStateIn.textContent = fmt(oldStack);
-        pipeStateOut.textContent = '...';
-        pipeOutput.classList.remove('active-out');
-        pipeInput.classList.add('active-in');
+        instrEl.textContent = p.instr;
+        stateEl.textContent = 'Stack: ' + fmt(oldStack);
+        headerEl.classList.add('active');
 
-        // Flow through layers
+        // Phase 1: Decode (both sides)
         setTimeout(() => {
-            pipeInput.classList.remove('active-in');
-            layerDecode.classList.add('active');
+            headerEl.classList.remove('active');
+            stdDecode.classList.add('active-decode');
+            hullDecode.classList.add('active-decode');
         }, 300);
 
+        // Phase 2: Attention (the key difference)
         setTimeout(() => {
-            layerDecode.classList.remove('active');
-            layerAttend.classList.add('active');
-        }, 600);
+            stdDecode.classList.remove('active-decode');
+            hullDecode.classList.remove('active-decode');
+            stdAttend.classList.add('active-std');
+            hullAttend.classList.add('active-hull');
 
-        setTimeout(() => {
-            layerAttend.classList.remove('active');
-            layerCompute.classList.add('active');
-        }, 900);
+            // Update cost displays
+            stdStepCost.textContent = 'This step: scan ' + stepNum + ' state' + (stepNum > 1 ? 's' : '') + ' → ' + stdCost + ' ops';
+            hullStepCost.textContent = 'This step: log\u2082(' + stepNum + ') → ' + hullCost + ' op' + (hullCost > 1 ? 's' : '');
 
+            // Bars (proportional to max step cost = program.length)
+            stdBar.style.width = (stdCost / program.length * 100) + '%';
+            hullBar.style.width = (hullCost / program.length * 100) + '%';
+        }, 650);
+
+        // Phase 3: Compute (both sides)
         setTimeout(() => {
-            layerCompute.classList.remove('active');
-            pipeOutput.classList.add('active-out');
+            stdAttend.classList.remove('active-std');
+            hullAttend.classList.remove('active-hull');
+            stdCompute.classList.add('active-compute');
+            hullCompute.classList.add('active-compute');
+        }, 1050);
+
+        // Phase 4: Done — update totals
+        setTimeout(() => {
+            stdCompute.classList.remove('active-compute');
+            hullCompute.classList.remove('active-compute');
 
             stack = newStack;
             pc++;
+            stdTotalOps += stdCost;
+            hullTotalOps += hullCost;
+
+            stdTotal.textContent = stdTotalOps;
+            hullTotal.textContent = hullTotalOps;
+
+            stateEl.textContent = 'Stack: ' + fmt(oldStack) + '  \u2192  ' + fmt(newStack);
 
             if (pc >= program.length) {
-                pipeStateOut.innerHTML = 'Stack: [ <strong style="color:var(--accent-green);font-size:1.1em">' + stack[stack.length - 1] + '</strong> ] &nbsp; done!';
-                pcEl.textContent = 'Step ' + pc + ' of ' + program.length + '  —  complete';
+                instrEl.textContent = p.instr + '  \u2192  done!  Result = ' + newStack[newStack.length - 1];
+                pcEl.textContent = 'Step ' + pc + ' of ' + program.length + '  \u2014  complete';
+                // Show scale note
+                scaleEl.style.display = 'block';
+                scaleEl.innerHTML = 'At <strong>1,000,000</strong> steps: Standard = <strong style="color:var(--accent-orange)">500 billion</strong> ops vs Hull = <strong style="color:var(--accent-green)">20 million</strong> ops \u2014 <strong>25,000\u00d7 faster</strong>';
                 stopPlay();
             } else {
-                pipeStateOut.textContent = fmt(newStack);
                 pcEl.textContent = 'Step ' + pc + ' of ' + program.length;
-                // Pre-fill next instruction
-                pipeInstr.textContent = program[pc].instr;
-                pipeStateIn.textContent = fmt(newStack);
+                instrEl.textContent = program[pc].instr;
             }
 
             animating = false;
             stepBtn.disabled = false;
-        }, 1200);
+        }, 1350);
     }
 
     function reset() {
         stopPlay();
         pc = 0;
         stack = [];
+        stdTotalOps = 0;
+        hullTotalOps = 0;
         animating = false;
         stepBtn.disabled = false;
         clearActive();
-        pipeInstr.textContent = program[0].instr;
-        pipeStateIn.textContent = fmt([]);
-        pipeStateOut.textContent = '\u2014';
+        instrEl.textContent = program[0].instr;
+        stateEl.textContent = 'Stack: [ ]';
         pcEl.textContent = 'Step 0 of ' + program.length;
+        stdStepCost.textContent = '\u2014';
+        hullStepCost.textContent = '\u2014';
+        stdBar.style.width = '0%';
+        hullBar.style.width = '0%';
+        stdTotal.textContent = '0';
+        hullTotal.textContent = '0';
+        scaleEl.style.display = 'none';
     }
 
     function togglePlay() {
@@ -1365,7 +1449,7 @@ function initExecutionDemo() {
             function tick() {
                 if (!playing || pc >= program.length) { stopPlay(); return; }
                 step();
-                playTimer = setTimeout(tick, 1600);
+                playTimer = setTimeout(tick, 1800);
             }
             tick();
         }
@@ -1382,9 +1466,8 @@ function initExecutionDemo() {
     resetBtn.addEventListener('click', reset);
 
     // Initial state
-    pipeInstr.textContent = program[0].instr;
-    pipeStateIn.textContent = fmt([]);
-    pipeStateOut.textContent = '\u2014';
+    instrEl.textContent = program[0].instr;
+    stateEl.textContent = 'Stack: [ ]';
     pcEl.textContent = 'Step 0 of ' + program.length;
 }
 
